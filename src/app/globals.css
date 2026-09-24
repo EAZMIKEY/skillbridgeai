@@ -1,20 +1,59 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0f;
-  --foreground: #ededed;
-}
+  --background: #0B0F17;
+  --surface-primary: #111827;
+  --surface-secondary: #151D2D;
+  --surface-tertiary: #192235;
+  --border-structural: #1E2638;
+  --border-subtle: #2A3447;
+  
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --accent-emerald: #10B981;
+  --accent-amber: #F59E0B;
+  --accent-crimson: #EF4444;
+  --accent-cyan: #06B6D4;
+  --accent-violet: #8B5CF6;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  overflow-x: hidden;
+}
+
+/* Precision Analytical Typography */
+.font-mono-val {
+  font-family: var(--font-mono, 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+  letter-spacing: -0.02em;
+}
+
+/* Layered Surfaces */
+.bg-canvas { background-color: #0B0F17; }
+.bg-surface-1 { background-color: #111827; }
+.bg-surface-2 { background-color: #151D2D; }
+.bg-surface-3 { background-color: #192235; }
+
+/* Structural Borders */
+.border-struct { border-color: #1E2638; }
+.border-struct-subtle { border-color: #2A3447; }
+
+/* Semantic Text Accent Classes */
+.text-emerald-val { color: #10B981; }
+.text-amber-val { color: #F59E0B; }
+.text-crimson-val { color: #EF4444; }
+.text-cyan-val { color: #06B6D4; }
+.text-violet-val { color: #8B5CF6; }
+
+/* Restrained Panel Glass */
+.panel-analytical {
+  background-color: rgba(17, 24, 39, 0.85);
+  border: 1px solid #1E2638;
+  border-radius: 8px;
 }
 
 .gradient-text {

@@ -1,31 +1,52 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
-import bcrypt from "bcryptjs";
 
 // POST /api/auth/login
 export async function POST(request) {
   try {
+    await connectDB();
     const { email, password } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email and password are required." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    // MOCK LOGIN TO BYPASS MONGODB NETWORK BLOCK FOR SHOWCASE
-    const safeUser = {
-      _id: "mock_user_" + Date.now(),
-      name: "Demo User",
-      username: email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, ""),
-      email: email,
-      role: "student"
-    };
+    const cleanEmail = String(email).toLowerCase().trim();
 
-    return NextResponse.json({ message: "Login successful (MOCKED).", user: safeUser });
+    // 1. Find user by email (selecting hidden password fields)
+    const user = await User.findOne({ email: cleanEmail }).select("+password +passwordHash");
+    if (!user) {
+      return NextResponse.json(
+        { error: "Invalid email or password." },
+        { status: 401 }
+      );
+    }
+
+    // 2. Verify password securely
+    const isValid = await user.comparePassword(password);
+    if (!isValid) {
+      return NextResponse.json(
+        { error: "Invalid email or password." },
+        { status: 401 }
+      );
+    }
+
+    // 3. Return trusted safe user object (role comes from server DB record)
+    const safeUser = user.toJSON();
+
+    return NextResponse.json({
+      message: "Login successful.",
+      user: safeUser,
+    });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Login API error:", error);
+    return NextResponse.json(
+      { error: "Authentication failed. Please check server configuration." },
+      { status: 500 }
+    );
   }
 }

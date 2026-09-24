@@ -179,7 +179,15 @@ export default function SolutionsPage() {
   const params = useParams();
   const problemId = params.problem_id;
 
-  const [company, setCompany] = useState(null);
+  const [company] = useState(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const stored = localStorage.getItem("innoverse_company");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [solutions, setSolutions] = useState([]);
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -195,7 +203,6 @@ export default function SolutionsPage() {
   useEffect(() => {
     const stored = localStorage.getItem("innoverse_company");
     if (!stored) { router.replace("/company-login"); return; }
-    setCompany(JSON.parse(stored));
 
     // Fetch problems to get problem details for breadcrumb
     const fetchProblem = async (companyId) => {
@@ -209,10 +216,17 @@ export default function SolutionsPage() {
       } catch { /* noop */ }
     };
 
-    const c = JSON.parse(stored);
-    Promise.all([fetchSolutions(), fetchProblem(c._id)]).finally(() =>
-      setLoading(false)
-    );
+    const loadData = async () => {
+      const c = JSON.parse(stored);
+      try {
+        await Promise.all([fetchSolutions(), fetchProblem(c._id)]);
+      } catch {
+        /* noop */
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, [problemId, router, fetchSolutions]);
 
   if (loading) {

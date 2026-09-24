@@ -5,6 +5,7 @@ import Company from "@/models/Company";
 // POST /api/company/register
 export async function POST(request) {
   try {
+    await connectDB();
     const { name, email, password } = await request.json();
 
     if (!name || !email || !password) {
@@ -20,14 +21,23 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+    
+    // Check if company exists
+    const existing = await Company.findOne({ email });
+    if (existing) {
+      return NextResponse.json(
+        { error: "Email already registered." },
+        { status: 409 }
+      );
+    }
 
-    // MOCKED RESPONSE FOR SHOWCASE
-    const safeCompany = {
-      _id: "mock_id_" + Date.now(),
+    const company = await Company.create({
       name,
       email,
-      role: "company"
-    };
+      password,
+    });
+
+    const safeCompany = company.toJSON();
 
     return NextResponse.json(
       { message: "Company registered successfully.", company: safeCompany },

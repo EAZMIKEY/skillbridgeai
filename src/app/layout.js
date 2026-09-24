@@ -12,8 +12,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Innoverse — Hackathon Platform",
-  description: "Host hackathons, build teams, submit projects, and win together.",
+  title: "SkillBridge AI — Future Workforce Intelligence",
+  description: "Aligning skill-development programs with industry requirements and emerging job-market demands.",
 };
 
 export default function RootLayout({ children }) {

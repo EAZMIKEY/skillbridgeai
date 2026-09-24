@@ -1,75 +1,74 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-const SocialLinkSchema = new mongoose.Schema({
-  platform: { type: String },
-  url: { type: String },
-});
-
-const ProjectSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String },
-  techStack: [{ type: String }],
-  liveUrl: { type: String },
-  githubUrl: { type: String },
-  imageUrl: { type: String },
-  featured: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now },
-});
-
 const UserSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, trim: true },
+    name: {
+      type: String,
+      required: [true, "Name is required"],
+      trim: true,
+    },
     username: {
       type: String,
-      required: true,
-      unique: true,
       lowercase: true,
       trim: true,
     },
     email: {
       type: String,
-      required: true,
+      required: [true, "Email is required"],
       unique: true,
       lowercase: true,
       trim: true,
     },
-    password: { type: String, required: true, select: false },
-    mobile: { type: String, trim: true },
-    bio: { type: String, maxlength: 500 },
-    avatar: { type: String, default: "" },
-    location: { type: String },
-    website: { type: String },
+    passwordHash: {
+      type: String,
+      select: false,
+    },
+    password: {
+      type: String,
+      select: false,
+    },
     role: {
       type: String,
-      enum: ["developer", "designer", "fullstack", "other"],
-      default: "developer",
+      required: [true, "Role is required"],
+      enum: ["student", "industry", "workforce"],
+      default: "student",
+      lowercase: true,
+      trim: true,
     },
-    skills: [{ type: String }],
-    socialLinks: [SocialLinkSchema],
-    projects: [ProjectSchema],
+    avatar: { type: String, default: "" },
+    bio: { type: String, default: "" },
     isVerified: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Hash password before saving
 UserSchema.pre("save", async function () {
-  if (!this.isModified("password")) return;
-  const salt = await bcrypt.genSalt(12);
-  this.password = await bcrypt.hash(this.password, salt);
+  const targetPassword = this.password || this.passwordHash;
+  if (!targetPassword) return;
+
+  if (this.isModified("password") || this.isModified("passwordHash")) {
+    const salt = await bcrypt.genSalt(12);
+    const hash = await bcrypt.hash(targetPassword, salt);
+    this.passwordHash = hash;
+    this.password = hash;
+  }
 });
 
-// Compare password method
+// Compare candidate password with passwordHash
 UserSchema.methods.comparePassword = async function (candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+  const hash = this.passwordHash || this.password;
+  if (!hash) return false;
+  return bcrypt.compare(candidatePassword, hash);
 };
 
-// Remove password from JSON output
+// Safe JSON serialization (never send password or passwordHash to client)
 UserSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
+  delete obj.passwordHash;
   return obj;
 };
 

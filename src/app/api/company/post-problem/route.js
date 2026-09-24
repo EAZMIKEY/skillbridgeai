@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { mockDB } from "@/lib/mockDB";
+import connectDB from "@/lib/mongodb";
+import Problem from "@/models/Problem";
 
 // POST /api/company/post-problem
 export async function POST(request) {
   try {
+    await connectDB();
     const { title, description, domain, expectedOutcome, companyId, companyName } =
       await request.json();
 
@@ -14,8 +16,7 @@ export async function POST(request) {
       );
     }
 
-    const problem = {
-      _id: "mock_" + Date.now().toString(),
+    const problem = await Problem.create({
       title,
       description,
       domain,
@@ -24,14 +25,10 @@ export async function POST(request) {
       companyName,
       status: "open",
       solutionCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    mockDB.problems.push(problem);
+    });
 
     return NextResponse.json(
-      { message: "Problem posted successfully (MOCKED).", problem },
+      { message: "Problem posted successfully.", problem },
       { status: 201 }
     );
   } catch (error) {

@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { mockDB } from "@/lib/mockDB";
+import connectDB from "@/lib/mongodb";
+import Problem from "@/models/Problem";
 
 // GET /api/company/problems?companyId=xxx
 export async function GET(request) {
   try {
+    await connectDB();
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get("companyId");
 
@@ -14,9 +16,7 @@ export async function GET(request) {
       );
     }
 
-    const problems = mockDB.problems
-      .filter((p) => String(p.company) === String(companyId))
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const problems = await Problem.find({ company: companyId }).sort({ createdAt: -1 });
 
     return NextResponse.json({ problems });
   } catch (error) {

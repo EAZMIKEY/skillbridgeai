@@ -1,8 +1,9 @@
 "use client";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { Menu, X, Code2, Building2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Menu, X, Code2, Building2, User } from "lucide-react";
+import { handleLensNavigation, clearStoredUser, getStoredUser } from "@/lib/auth/userSession";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -11,93 +12,94 @@ export default function Navbar() {
   const router = useRouter();
 
   useEffect(() => {
-    const stored = localStorage.getItem("innoverse_user");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      // Auto-migrate the mock to prevent /profile/undefined
-      if (!parsed.username && parsed.email) {
-        parsed.username = parsed.email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
-        localStorage.setItem("innoverse_user", JSON.stringify(parsed));
+    queueMicrotask(() => {
+      try {
+        const stored = getStoredUser();
+        if (stored) {
+          const username = stored.username || (stored.email ? stored.email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "") : "user");
+          setUser({ ...stored, username });
+        }
+        const companyStored = localStorage.getItem("innoverse_company");
+        if (companyStored) {
+          setCompany(JSON.parse(companyStored));
+        }
+      } catch {
+        // Ignore storage errors
       }
-      setUser(parsed);
-    }
-    const companyStored = localStorage.getItem("innoverse_company");
-    if (companyStored) setCompany(JSON.parse(companyStored));
+    });
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("innoverse_user");
+    clearStoredUser();
     setUser(null);
-    router.push("/");
+    setCompany(null);
+    router.push("/get-started");
   };
 
-  const NAV = [
-    { href: "/hackathons", label: "Hackathons" },
-    { href: "/explore", label: "Explore" },
-    { href: "/problems", label: "Problems" },
-    ...(user ? [{ href: "/dashboard", label: "Dashboard" }] : []),
-  ];
-
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center">
-              <Code2 size={14} className="text-white" />
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-md bg-[#111827] border border-[#1E2638] flex items-center justify-center">
+              <Code2 size={14} className="text-[#06B6D4]" />
             </div>
-            <span className="font-bold text-lg">
-              <span className="gradient-text">Innov</span>
-              <span className="text-white">erse</span>
-            </span>
+            <div className="leading-tight">
+              <div className="text-sm font-bold text-white">SKILLBRIDGE AI</div>
+              <div className="text-[10px] text-[#94A3B8] tracking-widest">WORKFORCE INTELLIGENCE</div>
+            </div>
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-7">
-            {NAV.map(n => (
-              <Link key={n.href} href={n.href} className="text-white/60 hover:text-white font-medium text-sm transition-colors">
-                {n.label}
-              </Link>
-            ))}
+          <div className="hidden md:flex items-center gap-6 text-xs font-mono">
+            <button 
+              onClick={() => handleLensNavigation("student", router)}
+              className="text-white/60 hover:text-white font-medium transition-colors cursor-pointer uppercase"
+            >
+              STUDENT
+            </button>
+            <button 
+              onClick={() => handleLensNavigation("industry", router)}
+              className="text-white/60 hover:text-white font-medium transition-colors cursor-pointer uppercase"
+            >
+              INDUSTRY
+            </button>
+            <button 
+              onClick={() => handleLensNavigation("workforce", router)}
+              className="text-white/60 hover:text-white font-medium transition-colors cursor-pointer uppercase"
+            >
+              WORKFORCE
+            </button>
+            <Link href="/product" className="text-white/60 hover:text-white font-medium transition-colors uppercase">
+              PRODUCT
+            </Link>
+            <Link href="/explore" className="text-white/60 hover:text-white font-medium transition-colors uppercase">
+              EXPLORE
+            </Link>
           </div>
 
           {/* CTA */}
           <div className="hidden md:flex items-center gap-3">
-            {company ? (
-              <>
-                <Link href="/company-dashboard" className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 text-sm font-medium transition-colors">
-                  <Building2 size={14} />
-                  {company.name}
-                </Link>
-                <button
-                  onClick={() => { localStorage.removeItem("innoverse_company"); setCompany(null); router.push("/"); }}
-                  className="px-4 py-2 rounded-lg glass border border-white/10 text-white/60 hover:text-white text-sm font-medium transition-colors"
+            {/* Right-side CTAs: Single Get Started Entry */}
+            {!user && !company && (
+              <Link href="/get-started" className="px-4 py-2 bg-[#06B6D4] hover:bg-[#06B6D4]/90 text-black font-mono font-bold rounded-lg text-xs transition-all shadow-md uppercase tracking-wider">
+                GET STARTED
+              </Link>
+            )}
+            {user ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono text-slate-300">
+                  {user.name || user.username} (<strong className="text-cyan-400 capitalize">{user.role || 'student'}</strong>)
+                </span>
+                <button 
+                  onClick={handleLogout} 
+                  className="px-3.5 py-1.5 rounded-lg glass border border-white/10 text-white/70 hover:text-white text-xs font-mono transition-colors cursor-pointer"
                 >
                   Sign Out
                 </button>
-              </>
-            ) : user ? (
-              <>
-                <Link href={`/profile/${user.username}`} className="text-white/60 hover:text-white text-sm font-medium transition-colors">
-                  @{user.username}
-                </Link>
-                <button onClick={handleLogout} className="px-4 py-2 rounded-lg glass border border-white/10 text-white/60 hover:text-white text-sm font-medium transition-colors">
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href="/company-login" className="flex items-center gap-1.5 text-emerald-400/80 hover:text-emerald-400 font-medium text-sm transition-colors">
-                  <Building2 size={14} />
-                  For Companies
-                </Link>
-                <Link href="/login" className="text-white/60 hover:text-white font-medium text-sm transition-colors">Log in</Link>
-                <Link href="/register" className="px-4 py-2 bg-gradient-to-r from-violet-600 to-blue-600 text-white font-medium rounded-lg text-sm hover:opacity-90 transition-all">
-                  Sign up
-                </Link>
-              </>
-            )}
+              </div>
+            ) : null}
           </div>
 
           {/* Mobile toggle */}
@@ -110,23 +112,39 @@ export default function Navbar() {
       {open && (
         <div className="md:hidden border-t border-white/5 bg-[#0a0a0f]/95 backdrop-blur-md">
           <div className="px-4 py-4 flex flex-col gap-3">
-            {NAV.map(n => (
-              <Link key={n.href} href={n.href} className="text-white/70 hover:text-white font-medium py-1 text-sm" onClick={() => setOpen(false)}>
-                {n.label}
-              </Link>
-            ))}
-            <hr className="border-white/5" />
-            <Link href="/company-login" className="text-emerald-400/70 font-medium py-1 text-sm" onClick={() => setOpen(false)}>
-              🏢 Company Portal
+            <button 
+              onClick={() => { handleLensNavigation("student", router); setOpen(false); }}
+              className="text-left text-white/70 hover:text-white font-medium py-1 text-sm font-mono uppercase"
+            >
+              STUDENT
+            </button>
+            <button 
+              onClick={() => { handleLensNavigation("industry", router); setOpen(false); }}
+              className="text-left text-white/70 hover:text-white font-medium py-1 text-sm font-mono uppercase"
+            >
+              INDUSTRY
+            </button>
+            <button 
+              onClick={() => { handleLensNavigation("workforce", router); setOpen(false); }}
+              className="text-left text-white/70 hover:text-white font-medium py-1 text-sm font-mono uppercase"
+            >
+              WORKFORCE
+            </button>
+            <Link href="/product" className="text-white/70 hover:text-white font-medium py-1 text-sm font-mono uppercase" onClick={() => setOpen(false)}>
+              PRODUCT
+            </Link>
+            <Link href="/explore" className="text-white/70 hover:text-white font-medium py-1 text-sm font-mono uppercase" onClick={() => setOpen(false)}>
+              EXPLORE
             </Link>
             <hr className="border-white/5" />
-            {user ? (
-              <button onClick={() => { handleLogout(); setOpen(false); }} className="text-left text-red-400 font-medium py-1 text-sm">Sign Out</button>
+            {user || company ? (
+              <button onClick={() => { handleLogout(); setOpen(false); }} className="text-left text-rose-400 font-medium py-1 text-sm font-mono">
+                Sign Out
+              </button>
             ) : (
-              <>
-                <Link href="/login" className="text-white/70 font-medium py-1 text-sm" onClick={() => setOpen(false)}>Log in</Link>
-                <Link href="/register" className="w-full text-center px-4 py-2 bg-gradient-to-r from-violet-600 to-blue-600 text-white font-medium rounded-lg text-sm" onClick={() => setOpen(false)}>Sign up</Link>
-              </>
+              <Link href="/get-started" className="w-full text-center px-4 py-2 bg-[#06B6D4] text-black font-mono font-bold rounded-lg text-sm uppercase tracking-wider" onClick={() => setOpen(false)}>
+                GET STARTED
+              </Link>
             )}
           </div>
         </div>

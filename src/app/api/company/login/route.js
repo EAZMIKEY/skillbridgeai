@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Company from "@/models/Company";
-import bcrypt from "bcryptjs";
 
 // POST /api/company/login
 export async function POST(request) {
   try {
+    await connectDB();
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -15,13 +15,17 @@ export async function POST(request) {
       );
     }
 
-    // MOCKED RESPONSE FOR SHOWCASE
-    const safeCompany = {
-      _id: "mock_id_12345",
-      name: "Showcase Company",
-      email,
-      role: "company"
-    };
+    const company = await Company.findOne({ email }).select("+password");
+    if (!company) {
+      return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
+    }
+
+    const isValid = await company.comparePassword(password);
+    if (!isValid) {
+      return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
+    }
+
+    const safeCompany = company.toJSON();
 
     return NextResponse.json({
       message: "Login successful.",
